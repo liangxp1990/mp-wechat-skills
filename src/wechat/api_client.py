@@ -1,0 +1,166 @@
+"""微信公众号 API 客户端"""
+
+import logging
+from typing import Dict
+from dataclasses import dataclass
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+from src.exceptions import WechatApiError
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class WechatConfig:
+    """微信公众号配置"""
+
+    app_id: str
+    app_secret: str
+    base_url: str = "https://api.weixin.qq.com"
+    timeout: int = 30
+
+
+class WechatApiClient:
+    """微信公众号 API 客户端"""
+
+    ENDPOINTS = {
+        "token": "/cgi-bin/token",
+        "upload_media": "/cgi-bin/material/add_material",
+        "upload_draft": "/cgi-bin/draft/add",
+        "update_draft": "/cgi-bin/draft/update",
+    }
+
+    def __init__(self, config: WechatConfig):
+        logger.info(f"[WechatAPI] 初始化客户端 - AppID: {config.app_id[:8]}***")
+        self.config = config
+        self._access_token: str = ""
+        self._session = self._create_session()
+
+    def _create_session(self) -> requests.Session:
+        """创建 HTTP 会话"""
+        logger.debug("[WechatAPI] 创建 HTTP 会话")
+        session = requests.Session()
+
+        retry_strategy = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("https://", adapter)
+
+        return session
+
+    def get_access_token(self) -> str:
+        """获取访问令牌"""
+        if self._access_token:
+            logger.debug("[WechatAPI] 使用缓存的 access_token")
+            return self._access_token
+
+        logger.info("[WechatAPI] 请求新的 access_token")
+        url = f"{self.config.base_url}{self.ENDPOINTS['token']}"
+        params = {
+            "grant_type": "client_credential",
+            "appid": self.config.app_id,
+            "secret": self.config.app_secret,
+        }
+
+        try:
+            response = self._session.get(url, params=params, timeout=self.config.timeout)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if "access_token" not in data:
+                error_msg = f"获取 access_token 失败: {data.get('errmsg', '未知错误')}"
+                logger.error(f"[WechatAPI] {error_msg}")
+                raise WechatApiError(error_msg, data.get("errcode"))
+
+            self._access_token = data["access_token"]
+            logger.info(f"[WechatAPI] access_token 获取成功")
+            return self._access_token
+
+        except requests.RequestException as e:
+            logger.error(f"[WechatAPI] 网络请求失败: {e}")
+            raise WechatApiError(f"网络请求失败: {e}")
+
+    def upload_media(self, file_path: str, media_type: str = "thumb") -> Dict:
+        """上传永久素材"""
+        logger.info(f"[WechatAPI] 开始上传素材 - 类型: {media_type}")
+
+        url = f"{self.config.base_url}{self.ENDPOINTS['upload_media']}"
+        params = {
+            "access_token": self.get_access_token(),
+            "type": media_type,
+        }
+
+        try:
+            with open(file_path, "rb") as f:
+                files = {"media": f}
+                response = self._session.post(url, params=params, files=files, timeout=self.config.timeout)
+
+            response.raise_for_status()
+            data = response.json()
+
+            if "media_id" not in data:
+                error_msg = f"上传素材失败: {data.get('errmsg', '未知错误')}"
+                logger.error(f"[WechatAPI] {error_msg}")
+                raise WechatApiError(error_msg, data.get("errcode"))
+
+            logger.info(f"[WechatAPI] 素材上传成功")
+            return data
+
+        except (requests.RequestException, IOError) as e:
+            logger.error(f"[WechatAPI] 上传失败: {e}")
+            raise WechatApiError(f"上传失败: {e}")
+
+    def upload_draft(self, articles: list) -> Dict:
+        """上传草稿"""
+        logger.info(f"[WechatAPI] 开始上传草稿")
+
+        url = f"{self.config.base_url}{self.ENDPOINTS['upload_draft']}"
+        params = {"access_token": self.get_access_token()}
+        payload = {"articles": articles}
+
+        try:
+            response = self._session.post(url, params=params, json=payload, timeout=self.config.timeout)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if data.get("errcode") != 0:
+                error_msg = f"上传草稿失败: {data.get('errmsg', '未知错误')}"
+                logger.error(f"[WechatAPI] {error_msg}")
+                raise WechatApiError(error_msg, data.get("errcode"))
+
+            logger.info(f"[WechatAPI] 草稿上传成功")
+            return data
+
+        except requests.RequestException as e:
+            logger.error(f"[WechatAPI] 草稿上传失败: {e}")
+            raise WechatApiError(f"草稿上传失败: {e}")
+
+    def update_draft(self, media_id: str, index: int, article: Dict) -> Dict:
+        """更新草稿"""
+        logger.info(f"[WechatAPI] 开始更新草稿 - media_id: {media_id}")
+
+        url = f"{self.config.base_url}{self.ENDPOINTS['update_draft']}"
+        params = {"access_token": self.get_access_token()}
+
+        payload = {"media_id": media_id, "index": index, "articles": article}
+
+        try:
+            response = self._session.post(url, params=params, json=payload, timeout=self.config.timeout)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if data.get("errcode") != 0:
+                error_msg = f"更新草稿失败: {data.get('errmsg', '未知错误')}"
+                logger.error(f"[WechatAPI] {error_msg}")
+                raise WechatApiError(error_msg, data.get("errcode"))
+
+            logger.info(f"[WechatAPI] 草稿更新成功")
+            return data
+
+        except requests.RequestException as e:
+            logger.error(f"[WechatAPI] 更新失败: {e}")
+            raise WechatApiError(f"更新失败: {e}")
