@@ -1,6 +1,7 @@
 """微信公众号 API 客户端"""
 
 import logging
+import json
 from typing import Dict
 from dataclasses import dataclass
 import requests
@@ -120,18 +121,34 @@ class WechatApiClient:
         params = {"access_token": self.get_access_token()}
         payload = {"articles": articles}
 
+        logger.debug(f"[WechatAPI] 草稿数据: {payload}")
+
+        # 手动序列化 JSON，确保中文不被转义
+        data = json.dumps(payload, ensure_ascii=False)
+
         try:
-            response = self._session.post(url, params=params, json=payload, timeout=self.config.timeout)
+            headers = {"Content-Type": "application/json; charset=utf-8"}
+            response = self._session.post(url, params=params, data=data.encode("utf-8"), headers=headers, timeout=self.config.timeout)
+
+            logger.debug(f"[WechatAPI] 响应状态码: {response.status_code}")
             response.raise_for_status()
 
             data = response.json()
+            logger.debug(f"[WechatAPI] 响应数据: {data}")
 
-            if data.get("errcode") != 0:
+            # 检查是否有错误码（有 errcode 且不等于 0 表示有错误）
+            errcode = data.get("errcode")
+            if errcode is not None and errcode != 0:
                 error_msg = f"上传草稿失败: {data.get('errmsg', '未知错误')}"
                 logger.error(f"[WechatAPI] {error_msg}")
-                raise WechatApiError(error_msg, data.get("errcode"))
+                raise WechatApiError(error_msg, errcode)
 
-            logger.info(f"[WechatAPI] 草稿上传成功")
+            # 成功响应包含 media_id
+            media_id = data.get("media_id")
+            if media_id:
+                logger.info(f"[WechatAPI] 草稿上传成功 - media_id: {media_id}")
+            else:
+                logger.info(f"[WechatAPI] 草稿上传成功")
             return data
 
         except requests.RequestException as e:
@@ -147,16 +164,23 @@ class WechatApiClient:
 
         payload = {"media_id": media_id, "index": index, "articles": article}
 
+        # 手动序列化 JSON，确保中文不被转义
+        data = json.dumps(payload, ensure_ascii=False)
+
         try:
-            response = self._session.post(url, params=params, json=payload, timeout=self.config.timeout)
+            headers = {"Content-Type": "application/json; charset=utf-8"}
+            response = self._session.post(url, params=params, data=data.encode("utf-8"), headers=headers, timeout=self.config.timeout)
             response.raise_for_status()
 
             data = response.json()
+            logger.debug(f"[WechatAPI] 响应数据: {data}")
 
-            if data.get("errcode") != 0:
+            # 检查是否有错误码
+            errcode = data.get("errcode")
+            if errcode is not None and errcode != 0:
                 error_msg = f"更新草稿失败: {data.get('errmsg', '未知错误')}"
                 logger.error(f"[WechatAPI] {error_msg}")
-                raise WechatApiError(error_msg, data.get("errcode"))
+                raise WechatApiError(error_msg, errcode)
 
             logger.info(f"[WechatAPI] 草稿更新成功")
             return data
