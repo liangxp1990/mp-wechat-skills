@@ -17,7 +17,8 @@ class MarkdownParser(BaseParser):
     """Markdown 解析器"""
 
     def __init__(self):
-        self.md = MarkdownIt()
+        # 使用 js-default preset 以支持 GFM (GitHub Flavored Markdown) 包括表格
+        self.md = MarkdownIt("js-default")
 
     def supports(self, file_path: Path) -> bool:
         """判断是否支持该文件类型"""

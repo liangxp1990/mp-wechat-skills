@@ -39,6 +39,9 @@ class StyleManager:
         # 处理引用
         html = self._style_blockquotes(html)
 
+        # 处理表格
+        html = self._style_tables(html)
+
         logger.info("[StyleManager] 样式应用完成")
         return html
 
@@ -118,3 +121,43 @@ class StyleManager:
         )
 
         return html
+
+    def _style_tables(self, html: str) -> str:
+        """处理表格样式"""
+        primary = self.theme["primary_color"]
+        text_color = self.theme["text_color"]
+
+        # 处理 table 标签
+        html = re.sub(
+            r"<table>",
+            rf'<table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">',
+            html,
+        )
+
+        # 处理 th 标签（表头）
+        html = re.sub(
+            r"<th>",
+            rf'<th style="background-color: {primary}; color: #ffffff; padding: 10px; text-align: left; font-weight: bold; border: 1px solid {self._darken_color(primary, 10)};">',
+            html,
+        )
+
+        # 处理 td 标签（单元格）
+        html = re.sub(
+            r"<td>",
+            rf'<td style="padding: 10px; border: 1px solid #e0e0e0; color: {text_color};">',
+            html,
+        )
+
+        return html
+
+    def _darken_color(self, hex_color: str, percent: int) -> str:
+        """将颜色变暗指定的百分比"""
+        hex_color = hex_color.lstrip("#")
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+        # 变暗颜色
+        r = max(0, int(r * (100 - percent) / 100))
+        g = max(0, int(g * (100 - percent) / 100))
+        b = max(0, int(b * (100 - percent) / 100))
+
+        return f"#{r:02x}{g:02x}{b:02x}"
