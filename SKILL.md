@@ -440,7 +440,7 @@ PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-wei
 ```
 
 **配置要求:**
-- 必须在项目根目录创建 `.env` 文件
+- 必须在 skills 目录下或者mp-weixin-skills目录下创建 `.env` 文件
 - `.env` 文件需要包含以下配置：
 
 ```bash
