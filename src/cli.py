@@ -124,6 +124,99 @@ def publish(ctx: click.Context, file: str, no_api: bool, template: str, cover_ty
 
 
 @main.command()
+@click.argument("media_id", type=str)
+@click.option("--source", type=click.Path(exists=True), help="指定新的源文件，默认使用原文件")
+@click.option("--regenerate-cover", is_flag=True, help="重新生成封面")
+@click.pass_context
+def update(ctx: click.Context, media_id: str, source: str, regenerate_cover: bool):
+    """更新已发布的草稿
+
+    更新微信公众号草稿箱中的文章内容。
+
+    示例:
+
+        mp-weixin update s_UokPQPIM8nkGd3QjvYHFFQq8HUuilOgU2rtin6ZBFfkK10hwHDHqhFr1jhzcIf
+
+        mp-weixin update <media_id> --source new-article.md
+
+        mp-weixin update <media_id> --regenerate-cover
+    """
+    try:
+        # 加载配置
+        config = AppConfig.from_env(ctx.obj["env"])
+        log_level = "DEBUG" if ctx.obj["verbose"] else config.log_level
+        setup_logging(log_level, config.log_file)
+
+        logger.info("[CLI] 微信公众号文章更新工具启动")
+        logger.info(f"[CLI] Media ID: {media_id}")
+
+        # 确定源文件
+        if not source:
+            # 如果没有指定，使用 test_article.md 作为默认源
+            source = "test_article.md"
+            logger.warning(f"[CLI] 未指定源文件，使用默认: {source}")
+
+        file_path = Path(source)
+
+        # 解析文档
+        parser = ParserFactory.get_parser(file_path)
+        parsed = parser.parse(file_path)
+
+        logger.info(f"[CLI] 文章标题: {parsed.title}")
+
+        # 转换内容
+        builder = WechatHTMLBuilder(config.template_name)
+        html_content = builder.build(parsed)
+
+        # 生成封面（如果需要）
+        if regenerate_cover:
+            logger.info("[CLI] 重新生成封面")
+            cover_gen = TemplateCoverGenerator(config.theme_color)
+            cover_result = cover_gen.generate(parsed.title, "")
+
+            # 上传新封面
+            api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
+            api_client = WechatApiClient(api_config)
+            cover_data = api_client.upload_media(str(cover_result.image_path), "thumb")
+            thumb_media_id = cover_data["media_id"]
+            logger.info(f"[CLI] 新封面 media_id: {thumb_media_id}")
+        else:
+            thumb_media_id = None
+            logger.info("[CLI] 保持原封面")
+
+        # 构建文章数据
+        article = {
+            "title": parsed.title,
+            "content": html_content,
+            "need_open_comment": 0,
+            "only_fans_can_comment": 0,
+        }
+
+        # 如果有新封面，添加到文章数据
+        if thumb_media_id:
+            article["thumb_media_id"] = thumb_media_id
+
+        # 更新草稿
+        api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
+        api_client = WechatApiClient(api_config)
+
+        result = api_client.update_draft(media_id, 0, article)
+
+        click.echo(f"✅ 草稿更新成功!")
+        click.echo(f"   Media ID: {media_id}")
+        click.echo(f"   标题: {parsed.title}")
+        click.echo(f"   📝 请在微信公众号后台查看更新后的草稿")
+
+    except MpWeixinError as e:
+        click.echo(e.user_message())
+        sys.exit(1)
+    except Exception as e:
+        logger.exception(f"[CLI] 未处理的异常")
+        click.echo(f"❌ 发生错误: {e}")
+        sys.exit(1)
+
+
+@main.command()
 def version():
     """显示版本信息"""
     from src import __version__
