@@ -1,9 +1,9 @@
 """文档解析器模块"""
 
-from src.parsers.base import ParserFactory, BaseParser, ParsedContent
-from src.parsers.markdown import MarkdownParser
-from src.parsers.word import WordParser
-from src.parsers.pdf import PDFParser
+from parsers.base import ParserFactory, BaseParser, ParsedContent
+from parsers.markdown import MarkdownParser
+from parsers.word import WordParser
+from parsers.pdf import PDFParser
 
 # 注册解析器
 ParserFactory.register(".md", MarkdownParser())

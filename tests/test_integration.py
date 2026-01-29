@@ -1,9 +1,9 @@
 """集成测试"""
 
 from pathlib import Path
-from src.parsers import ParserFactory
-from src.converters import WechatHTMLBuilder
-from src.covers.template_maker import TemplateCoverGenerator
+from parsers import ParserFactory
+from converters import WechatHTMLBuilder
+from covers.template_maker import TemplateCoverGenerator
 
 
 def test_full_conversion_flow():
@@ -94,8 +94,8 @@ def test_parser_factory_integration():
 
 def test_style_manager_with_builder():
     """测试样式管理器与构建器的集成"""
-    from src.parsers.base import ParsedContent
-    from src.converters.style_manager import StyleManager
+    from parsers.base import ParsedContent
+    from converters.style_manager import StyleManager
 
     # 创建测试内容
     parsed = ParsedContent(
@@ -119,7 +119,7 @@ def test_style_manager_with_builder():
 
 def test_error_handling_integration():
     """测试错误处理的集成"""
-    from src.exceptions import UnsupportedFileTypeError
+    from exceptions import UnsupportedFileTypeError
 
     # 测试不支持的文件类型
     try:

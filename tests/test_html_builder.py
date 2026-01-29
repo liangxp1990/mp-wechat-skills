@@ -1,8 +1,8 @@
 """测试 HTML 构建器"""
 
-from src.parsers.base import ParsedContent
-from src.converters.html_builder import WechatHTMLBuilder
-from src.converters.style_manager import StyleManager
+from parsers.base import ParsedContent
+from converters.html_builder import WechatHTMLBuilder
+from converters.style_manager import StyleManager
 from pathlib import Path
 
 

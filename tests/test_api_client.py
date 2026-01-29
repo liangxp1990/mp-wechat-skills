@@ -1,6 +1,6 @@
 """测试微信 API 客户端"""
 
-from src.wechat.api_client import WechatApiClient, WechatConfig
+from wechat.api_client import WechatApiClient, WechatConfig
 
 
 def test_wechat_config():

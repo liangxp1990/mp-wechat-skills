@@ -5,47 +5,52 @@ import logging
 from pathlib import Path
 import click
 
-from src.config import AppConfig
-from src.utils.logger import setup_logging
-from src.parsers import ParserFactory
-from src.converters import WechatHTMLBuilder
-from src.covers.template_maker import TemplateCoverGenerator
-from src.wechat import WechatApiClient, WechatConfig
-from src.exceptions import MpWeixinError
+from config import AppConfig
+from utils.logger import setup_logging
+from parsers import ParserFactory
+from converters import WechatHTMLBuilder
+from covers.template_maker import TemplateCoverGenerator
+from wechat import WechatApiClient, WechatConfig
+from exceptions import MpWeixinError
 
 logger = logging.getLogger(__name__)
 
 
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="详细输出")
-@click.option("--env", default=".env", help="环境文件路径")
+@click.option("--env", default=".env", help="环境文件路径（相对于 project-path 或绝对路径）")
+@click.option("--project-path", help="项目根目录路径（用于解析相对路径）")
 @click.pass_context
-def main(ctx: click.Context, verbose: bool, env: str):
+def main(ctx: click.Context, verbose: bool, env: str, project_path: str):
     """微信公众号文章发布工具
 
     一个强大的工具，将 Markdown 文档转换为符合微信公众号排版要求的格式。
     """
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
-    ctx.obj["env"] = env
+    ctx.obj["project_path"] = project_path
+
+    # 解析 env 文件路径
+    env_path = Path(env)
+    if not env_path.is_absolute() and project_path:
+        # 如果 env 是相对路径且有 project_path，则拼接
+        env_path = Path(project_path) / env
+    ctx.obj["env"] = str(env_path)
 
 
 @main.command()
 @click.argument("file", type=click.Path(exists=True))
-@click.option("--no-api", is_flag=True, help="不使用 API，仅生成 HTML 文件")
 @click.option("--template", default="default", help="样式模板名称")
 @click.option("--cover-type", default="template", help="封面生成方式 (template)")
 @click.pass_context
-def publish(ctx: click.Context, file: str, no_api: bool, template: str, cover_type: str):
+def publish(ctx: click.Context, file: str, template: str, cover_type: str):
     """发布文章到微信公众号
 
-    将 Markdown 文件转换为微信公众号格式，并可选上传到草稿箱。
+    将 Markdown 文件转换为微信公众号格式，并自动上传到草稿箱。
 
     示例:
 
-        mp-weixin publish article.md                    # 使用 API 上传
-
-        mp-weixin publish article.md --no-api          # 仅生成 HTML 文件
+        mp-weixin publish article.md                    # 使用 API 上传到草稿箱
 
         mp-weixin publish article.md --template fancy  # 使用指定模板
     """
@@ -56,6 +61,19 @@ def publish(ctx: click.Context, file: str, no_api: bool, template: str, cover_ty
         setup_logging(log_level, config.log_file)
 
         logger.info("[CLI] 微信公众号文章发布工具启动")
+
+        # 检查微信 API 配置
+        if not config.has_wechat_api():
+            click.echo("❌ 未配置微信公众号 API 凭证")
+            click.echo("\n请在项目根目录的 .env 文件中添加以下配置：")
+            click.echo("\n  WECHAT_APP_ID=your_app_id")
+            click.echo("  WECHAT_APP_SECRET=your_app_secret")
+            click.echo("\n获取方式：")
+            click.echo("  1. 登录微信公众平台 https://mp.weixin.qq.com")
+            click.echo("  2. 进入「开发 → 基本配置」")
+            click.echo("  3. 查看「开发者ID (AppID)」和「开发者密码 (AppSecret)」")
+            click.echo("\n配置完成后，请重新运行命令。")
+            sys.exit(1)
 
         # 解析文档
         file_path = Path(file)
@@ -72,47 +90,30 @@ def publish(ctx: click.Context, file: str, no_api: bool, template: str, cover_ty
         cover_gen = TemplateCoverGenerator(config.theme_color)
         cover_result = cover_gen.generate(parsed.title, "")
 
-        if no_api or not config.has_wechat_api():
-            # 手动模式
-            logger.info("[CLI] 运行在手动模式")
+        # API 模式
+        logger.info("[CLI] 运行在 API 模式")
 
-            output_dir = config.output_dir
-            output_dir.mkdir(parents=True, exist_ok=True)
+        api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
+        api_client = WechatApiClient(api_config)
 
-            # 保存 HTML
-            html_file = output_dir / f"{file_path.stem}.html"
-            html_file.write_text(html_content, encoding="utf-8")
+        # 上传封面
+        cover_data = api_client.upload_media(str(cover_result.image_path), "thumb")
 
-            click.echo(f"✅ 转换完成!")
-            click.echo(f"   HTML: {html_file}")
-            click.echo(f"   封面: {cover_result.image_path}")
-            click.echo(f"\n📝 请手动上传到微信公众号后台")
+        # 构建文章数据
+        article = {
+            "title": parsed.title,
+            "content": html_content,
+            "thumb_media_id": cover_data["media_id"],
+            "need_open_comment": 0,
+            "only_fans_can_comment": 0,
+        }
 
-        else:
-            # API 模式
-            logger.info("[CLI] 运行在 API 模式")
+        # 上传草稿
+        result = api_client.upload_draft([article])
 
-            api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
-            api_client = WechatApiClient(api_config)
-
-            # 上传封面
-            cover_data = api_client.upload_media(str(cover_result.image_path), "thumb")
-
-            # 构建文章数据
-            article = {
-                "title": parsed.title,
-                "content": html_content,
-                "thumb_media_id": cover_data["media_id"],
-                "need_open_comment": 0,
-                "only_fans_can_comment": 0,
-            }
-
-            # 上传草稿
-            result = api_client.upload_draft([article])
-
-            click.echo(f"✅ 文章发布成功!")
-            click.echo(f"   Media ID: {result['media_id']}")
-            click.echo(f"   📝 请在微信公众号后台查看草稿")
+        click.echo(f"✅ 文章发布成功!")
+        click.echo(f"   Media ID: {result['media_id']}")
+        click.echo(f"   📝 请在微信公众号后台查看草稿")
 
     except MpWeixinError as e:
         click.echo(e.user_message())
@@ -229,8 +230,11 @@ def update(ctx: click.Context, media_id: str, source: str, regenerate_cover: boo
 @main.command()
 def version():
     """显示版本信息"""
-    from src import __version__
-    click.echo(f"mp-weixin-skills version {__version__}")
+    try:
+        from config import __version__
+        click.echo(f"mp-weixin-skills version {__version__}")
+    except ImportError:
+        click.echo("mp-weixin-skills version 0.1.0")
 
 
 if __name__ == "__main__":

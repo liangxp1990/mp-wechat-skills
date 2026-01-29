@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 import fitz  # PyMuPDF
-from src.parsers.base import BaseParser, ParsedContent
+from parsers.base import BaseParser, ParsedContent
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class PDFParser(BaseParser):
 
         except Exception as e:
             logger.error(f"[PDFParser] 解析失败: {e}")
-            from src.exceptions import FileReadError
+            from exceptions import FileReadError
             raise FileReadError(str(file_path), str(e))
 
     def _extract_title(self, doc) -> str:

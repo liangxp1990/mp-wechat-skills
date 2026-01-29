@@ -3,7 +3,7 @@
 import logging
 import tempfile
 from pathlib import Path
-from src.utils.logger import setup_logging
+from utils.logger import setup_logging
 
 
 def test_setup_logging_console():

@@ -8,7 +8,7 @@ import re
 from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
 
-from src.parsers.base import BaseParser, ParsedContent
+from parsers.base import BaseParser, ParsedContent
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +28,13 @@ class MarkdownParser(BaseParser):
         logger.info(f"[MarkdownParser] 开始解析: {file_path}")
 
         if not file_path.exists():
-            from src.exceptions import FileReadError
+            from exceptions import FileReadError
             raise FileReadError(str(file_path), "文件不存在")
 
         try:
             content = file_path.read_text(encoding="utf-8")
         except Exception as e:
-            from src.exceptions import FileReadError
+            from exceptions import FileReadError
             raise FileReadError(str(file_path), str(e))
 
         # 提取标题（第一个 # 标题）

@@ -1,8 +1,8 @@
 """测试 Markdown 解析器"""
 
 from pathlib import Path
-from src.parsers.markdown import MarkdownParser
-from src.parsers.base import ParsedContent
+from parsers.markdown import MarkdownParser
+from parsers.base import ParsedContent
 
 
 def test_markdown_parser_supports():

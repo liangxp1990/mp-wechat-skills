@@ -1,6 +1,6 @@
 """测试异常类"""
 
-from src.exceptions import UnsupportedFileTypeError, WechatApiError
+from exceptions import UnsupportedFileTypeError, WechatApiError
 
 
 def test_unsupported_file_type_error():

@@ -209,6 +209,37 @@ def example():
     return "Hello"
 ```
 
+## Instructions
+
+### 执行命令
+
+**发布文章到微信草稿箱:**
+
+```bash
+# 项目根目录执行
+PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-weixin-skills/scripts/cli.py publish <file.md>
+
+# 更新已有草稿
+PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-weixin-skills/scripts/cli.py update <media_id>
+
+# 显示版本
+PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-weixin-skills/scripts/cli.py version
+```
+
+**配置要求:**
+- 必须在项目根目录创建 `.env` 文件
+- `.env` 文件需要包含以下配置：
+
+```bash
+WECHAT_APP_ID=your_app_id
+WECHAT_APP_SECRET=your_app_secret
+```
+
+**获取 AppID 和 AppSecret:**
+1. 登录微信公众平台 https://mp.weixin.qq.com
+2. 进入「开发 → 基本配置」
+3. 查看「开发者ID (AppID)」和「开发者密码 (AppSecret)」
+
 ## Command Reference
 
 ### publish - 发布文章

@@ -31,10 +31,10 @@ dev = [
 ]
 
 [project.scripts]
-mp-weixin = "src.cli:main"
+mp-weixin = "scripts.cli:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["scripts"]
 
 [tool.black]
 line-length = 100

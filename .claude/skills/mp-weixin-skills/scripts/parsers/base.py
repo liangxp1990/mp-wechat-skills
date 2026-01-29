@@ -55,7 +55,7 @@ class ParserFactory:
         ext = file_path.suffix.lower()
         parser = cls._parsers.get(ext)
         if not parser:
-            from src.exceptions import UnsupportedFileTypeError
+            from exceptions import UnsupportedFileTypeError
             raise UnsupportedFileTypeError(str(file_path), ext)
         return parser
 

@@ -8,7 +8,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.exceptions import WechatApiError
+from exceptions import WechatApiError
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 """测试模板封面生成器"""
 
 from pathlib import Path
-from src.covers.template_maker import TemplateCoverGenerator
+from covers.template_maker import TemplateCoverGenerator
 
 
 def test_template_cover_generator_available():

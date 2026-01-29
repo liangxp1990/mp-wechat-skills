@@ -27,6 +27,57 @@ description: 使用此 skill 将 Markdown/Word/PDF 文档转换为微信公众�
 2. 配置服务器 IP 白名单
 3. 确保有稳定的网络连接
 
+## Instructions
+
+### 执行命令
+
+**发布文章到微信草稿箱:**
+
+```bash
+# 方案 1：项目根目录（相对路径）
+PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-weixin-skills/scripts/cli.py publish <file.md>
+
+# 方案 2：任何目录（绝对路径）
+PROJECT_PATH="/path/to/mp-weixin-skills"
+PYTHONPATH=$PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts python3 $PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts/cli.py --project-path $PROJECT_PATH publish <file.md>
+```
+
+**更新已有草稿:**
+
+```bash
+# 方案 1：项目根目录
+PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-weixin-skills/scripts/cli.py update <media_id>
+
+# 方案 2：任何目录
+PROJECT_PATH="/path/to/mp-weixin-skills"
+PYTHONPATH=$PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts python3 $PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts/cli.py --project-path $PROJECT_PATH update <media_id>
+```
+
+### 配置要求
+
+**必需配置:**
+- 在项目根目录创建 `.env` 文件
+- 添加微信公众号 API 凭证：
+
+```bash
+WECHAT_APP_ID=your_app_id
+WECHAT_APP_SECRET=your_app_secret
+```
+
+**获取 AppID 和 AppSecret:**
+1. 登录微信公众平台 https://mp.weixin.qq.com
+2. 进入「开发 → 基本配置」
+3. 查看「开发者ID (AppID)」和「开发者密码 (AppSecret)」
+
+**注意**: 如果未配置微信 API 凭证，工具会提示配置并引导完成设置。
+
+### 工作流程
+
+1. **确认环境配置**: 确保项目根目录的 `.env` 文件包含微信 API 凭证
+2. **准备文档**: 确保 Markdown/Word/PDF 文档格式正确
+3. **执行发布**: 运行发布命令，工具自动上传封面和文章内容到草稿箱
+4. **检查结果**: 在微信公众号后台查看草稿箱
+
 ## 最佳实践
 
 ### 标题规范

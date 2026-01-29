@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple
 from datetime import datetime
 
 from PIL import Image, ImageDraw, ImageFont
-from src.covers.base import BaseCoverGenerator, CoverResult
+from covers.base import BaseCoverGenerator, CoverResult
 
 logger = logging.getLogger(__name__)
 

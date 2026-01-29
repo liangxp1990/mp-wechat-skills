@@ -1,8 +1,8 @@
 """HTML 构建器"""
 
 import logging
-from src.parsers.base import ParsedContent
-from src.converters.style_manager import StyleManager
+from parsers.base import ParsedContent
+from converters.style_manager import StyleManager
 
 logger = logging.getLogger(__name__)
 
