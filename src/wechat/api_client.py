@@ -31,6 +31,7 @@ class WechatApiClient:
         "upload_media": "/cgi-bin/material/add_material",
         "upload_draft": "/cgi-bin/draft/add",
         "update_draft": "/cgi-bin/draft/update",
+        "get_draft": "/cgi-bin/draft/get",
     }
 
     def __init__(self, config: WechatConfig):
@@ -155,6 +156,46 @@ class WechatApiClient:
             logger.error(f"[WechatAPI] 草稿上传失败: {e}")
             raise WechatApiError(f"草稿上传失败: {e}")
 
+    def get_draft(self, media_id: str) -> Dict:
+        """获取草稿详情"""
+        logger.info(f"[WechatAPI] 开始获取草稿详情 - media_id: {media_id}")
+
+        url = f"{self.config.base_url}{self.ENDPOINTS['get_draft']}"
+        params = {"access_token": self.get_access_token()}
+        payload = {"media_id": media_id}
+
+        # 手动序列化 JSON，确保中文不被转义
+        data = json.dumps(payload, ensure_ascii=False)
+
+        try:
+            headers = {"Content-Type": "application/json; charset=utf-8"}
+            response = self._session.post(url, params=params, data=data.encode("utf-8"), headers=headers, timeout=self.config.timeout)
+            response.raise_for_status()
+
+            result = response.json()
+            logger.debug(f"[WechatAPI] 响应数据: {result}")
+
+            # 检查是否有错误码
+            errcode = result.get("errcode")
+            if errcode is not None and errcode != 0:
+                error_msg = f"获取草稿失败: {result.get('errmsg', '未知错误')}"
+                logger.error(f"[WechatAPI] {error_msg}")
+                raise WechatApiError(error_msg, errcode)
+
+            # 从返回的数据中提取文章信息
+            # 返回格式: {"news_item": [{...文章数据...}]}
+            articles = result.get("news_item", [])
+            if articles:
+                logger.info(f"[WechatAPI] 草稿获取成功 - 文章数: {len(articles)}")
+                return articles[0]  # 返回第一篇文章的数据
+            else:
+                logger.warning(f"[WechatAPI] 草稿中没有文章")
+                return {}
+
+        except requests.RequestException as e:
+            logger.error(f"[WechatAPI] 获取草稿失败: {e}")
+            raise WechatApiError(f"获取草稿失败: {e}")
+
     def update_draft(self, media_id: str, index: int, article: Dict) -> Dict:
         """更新草稿"""
         logger.info(f"[WechatAPI] 开始更新草稿 - media_id: {media_id}")
@@ -162,10 +203,12 @@ class WechatApiClient:
         url = f"{self.config.base_url}{self.ENDPOINTS['update_draft']}"
         params = {"access_token": self.get_access_token()}
 
-        payload = {"media_id": media_id, "index": index, "articles": article}
+        # 注意：articles 是对象，不是数组；index 需要转换为字符串
+        payload = {"media_id": media_id, "index": str(index), "articles": article}
 
         # 手动序列化 JSON，确保中文不被转义
         data = json.dumps(payload, ensure_ascii=False)
+        logger.info(f"[WechatAPI] 请求体: {data}")
 
         try:
             headers = {"Content-Type": "application/json; charset=utf-8"}

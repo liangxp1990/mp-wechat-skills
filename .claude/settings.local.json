@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(test:*)",
+      "Bash(python3:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(tree:*)",
+      "Bash(pytest:*)",
+      "Bash(git reset:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(PYTHONPATH=/Users/liangxp-macmini/IdeaProjects/mp-weixin-skills python3:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(LOG_LEVEL=DEBUG python3:*)"
+    ]
+  }
+}

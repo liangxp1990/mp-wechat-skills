@@ -33,3 +33,12 @@ def test_setup_logging_with_file():
         # 验证内容
         content = log_file.read_text(encoding="utf-8")
         assert "测试消息到文件" in content
+
+
+def test_third_party_log_levels():
+    """测试第三方库日志级别设置"""
+    setup_logging()
+    assert logging.getLogger("requests").level == logging.WARNING
+    assert logging.getLogger("urllib3").level == logging.WARNING
+    assert logging.getLogger("PIL").level == logging.WARNING
+

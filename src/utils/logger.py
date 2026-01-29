@@ -4,12 +4,18 @@ import logging
 import sys
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
-import json
 
 
 class ColoredFormatter(logging.Formatter):
-    """带颜色的控制台日志格式化器"""
+    """带颜色的控制台日志格式化器。
+
+    为不同日志级别添加 ANSI 颜色代码,使控制台输出更易读。
+    仅在输出到终端时启用颜色,重定向到文件时自动禁用。
+
+    Attributes:
+        COLORS: 日志级别到 ANSI 颜色代码的映射
+        use_color: 是否启用彩色输出
+    """
 
     COLORS = {
         "DEBUG": "\033[36m",
@@ -37,8 +43,19 @@ def setup_logging(
     log_file: Optional[Path] = None,
     console_output: bool = True,
 ) -> None:
-    """设置日志系统"""
+    """设置应用程序的日志系统。
 
+    配置根日志记录器,支持控制台彩色输出和文件日志记录。
+    会清除所有已存在的处理器,并设置第三方库的日志级别。
+
+    Args:
+        log_level: 日志级别,如 "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+        log_file: 日志文件路径,如果为 None 则不记录到文件
+        console_output: 是否输出到控制台,默认为 True
+
+    Returns:
+        None
+    """
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level.upper()))
     root_logger.handlers.clear()

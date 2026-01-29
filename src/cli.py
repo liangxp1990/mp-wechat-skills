@@ -181,33 +181,36 @@ def update(ctx: click.Context, media_id: str, source: str, regenerate_cover: boo
             thumb_media_id = cover_data["media_id"]
             logger.info(f"[CLI] 新封面 media_id: {thumb_media_id}")
         else:
-            thumb_media_id = None
+            # 获取原草稿的 thumb_media_id
             logger.info("[CLI] 保持原封面")
+            api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
+            api_client = WechatApiClient(api_config)
+            original_draft = api_client.get_draft(media_id)
+            thumb_media_id = original_draft.get("thumb_media_id", "")
+            logger.info(f"[CLI] 原封面 media_id: {thumb_media_id}")
 
-        # 构建文章数据（必需字段）
-        article = {
+        # 构建文章数据（按照微信 API 格式）
+        # 注意：articles 是对象，不是数组！
+        article_data = {
+            "article_type": "news",
             "title": parsed.title,
-            "content": html_content,
             "author": parsed.metadata.get("author", ""),
-            "digest": "",  # 单图文消息的摘要，如果有
+            "digest": "",  # 单图文消息的摘要
+            "content": html_content,
+            "content_source_url": "",  # 原文链接
             "need_open_comment": 0,
             "only_fans_can_comment": 0,
         }
 
         # 如果有新封面，添加到文章数据
         if thumb_media_id:
-            article["thumb_media_id"] = thumb_media_id
-        else:
-            # 如果没有新封面，需要保留原有的 thumb_media_id
-            # 由于我们无法获取原有封面，这里设为空字符串
-            # 注意：这可能会导致封面丢失
-            article["thumb_media_id"] = ""
+            article_data["thumb_media_id"] = thumb_media_id
 
         # 更新草稿
         api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
         api_client = WechatApiClient(api_config)
 
-        result = api_client.update_draft(media_id, 0, article)
+        result = api_client.update_draft(media_id, 0, article_data)
 
         click.echo(f"✅ 草稿更新成功!")
         click.echo(f"   Media ID: {media_id}")
