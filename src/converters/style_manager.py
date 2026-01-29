@@ -45,22 +45,36 @@ class StyleManager:
     def _style_headings(self, html: str) -> str:
         """处理标题样式"""
         color = self.theme["heading_color"]
+        primary = self.theme["primary_color"]
 
-        # h1
+        # h1 - 带主题色渐变背景
+        # 创建渐变效果：从主题色淡化版本到白色背景
         html = re.sub(
             r"<h1>(.+?)</h1>",
-            rf'<h1 style="font-size: 24px; font-weight: bold; color: {color}; margin: 20px 0; border-bottom: 2px solid {self.theme["primary_color"]}; padding-bottom: 10px;">\1</h1>',
+            rf'<h1 style="font-size: 26px; font-weight: bold; color: #ffffff; margin: 20px 0; padding: 20px 24px; background: linear-gradient(135deg, {primary} 0%, {self._lighten_color(primary, 20)} 100%); border-radius: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.08);">\1</h1>',
             html,
         )
 
         # h2
         html = re.sub(
             r"<h2>(.+?)</h2>",
-            rf'<h2 style="font-size: 20px; font-weight: bold; color: {color}; margin: 18px 0;">\1</h2>',
+            rf'<h2 style="font-size: 20px; font-weight: bold; color: {color}; margin: 18px 0; padding-left: 12px; border-left: 4px solid {primary};">\1</h2>',
             html,
         )
 
         return html
+
+    def _lighten_color(self, hex_color: str, percent: int) -> str:
+        """将颜色变亮指定的百分比"""
+        hex_color = hex_color.lstrip("#")
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+        # 变亮颜色
+        r = min(255, int(r + (255 - r) * percent / 100))
+        g = min(255, int(g + (255 - g) * percent / 100))
+        b = min(255, int(b + (255 - b) * percent / 100))
+
+        return f"#{r:02x}{g:02x}{b:02x}"
 
     def _style_paragraphs(self, html: str) -> str:
         """处理段落样式"""
