@@ -184,10 +184,12 @@ def update(ctx: click.Context, media_id: str, source: str, regenerate_cover: boo
             thumb_media_id = None
             logger.info("[CLI] 保持原封面")
 
-        # 构建文章数据
+        # 构建文章数据（必需字段）
         article = {
             "title": parsed.title,
             "content": html_content,
+            "author": parsed.metadata.get("author", ""),
+            "digest": "",  # 单图文消息的摘要，如果有
             "need_open_comment": 0,
             "only_fans_can_comment": 0,
         }
@@ -195,6 +197,11 @@ def update(ctx: click.Context, media_id: str, source: str, regenerate_cover: boo
         # 如果有新封面，添加到文章数据
         if thumb_media_id:
             article["thumb_media_id"] = thumb_media_id
+        else:
+            # 如果没有新封面，需要保留原有的 thumb_media_id
+            # 由于我们无法获取原有封面，这里设为空字符串
+            # 注意：这可能会导致封面丢失
+            article["thumb_media_id"] = ""
 
         # 更新草稿
         api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
