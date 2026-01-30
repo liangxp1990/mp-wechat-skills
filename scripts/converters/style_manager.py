@@ -42,6 +42,9 @@ class StyleManager:
         # 处理表格
         html = self._style_tables(html)
 
+        # 清理空列表项（修复 emoji 数字被误解析为有序列表的问题）
+        html = self._cleanup_empty_list_items(html)
+
         logger.info("[StyleManager] 样式应用完成")
         return html
 
@@ -86,25 +89,38 @@ class StyleManager:
 
         html = re.sub(
             r"<p>(.+?)</p>",
-            rf'<p style="color: {color}; line-height: 1.8; margin: {spacing} 0; font-size: 16px;">\1</p>',
+            rf'<p style="color: {color}; line-height: 1.75; margin: {spacing} 0; font-size: 15px; text-align: justify;">\1</p>',
             html,
         )
 
         return html
 
     def _style_code_blocks(self, html: str) -> str:
-        """处理代码块样式"""
-        # 内联代码
+        """处理代码块样式 - 微信公众号移动端友好设计"""
+        # 内联代码 - 更适合手机阅读
         html = re.sub(
             r"<code>(.+?)</code>",
-            r'<code style="background-color: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #e74c3c;">\1</code>',
+            r'<code style="background-color: #f0f0f0; color: #d63384; padding: 3px 6px; border-radius: 4px; font-family: -apple-system, BlinkMacSystemFont, \"SF Mono\", Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 14px;">\1</code>',
             html,
         )
 
-        # 代码块
+        # 代码块 - 移动端友好（横向滚动，不强制换行）
+        # 先处理 <pre><code> 组合
         html = re.sub(
-            r"<pre>(.+?)</pre>",
-            r'<pre style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; font-family: monospace; font-size: 14px; line-height: 1.5;">\1</pre>',
+            r"<pre><code",
+            '<pre style="background-color: #2d2d2d; color: #f8f8f2; padding: 15px 12px; border-radius: 8px; overflow-x: auto; max-width: 100%; font-family: -apple-system, BlinkMacSystemFont, \"SF Mono\", Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 13px; line-height: 1.6; margin: 16px 0; white-space: pre; word-break: normal; -webkit-overflow-scrolling: touch;"><code style="background-color: transparent; color: inherit; padding: 0; font-size: 13px;"',
+            html,
+        )
+        html = re.sub(
+            r"</code></pre>",
+            '</code></pre>',
+            html,
+        )
+
+        # 单独的 <pre> 标签（没有 code）
+        html = re.sub(
+            r'<pre(?![^>]*style)',
+            '<pre style="background-color: #2d2d2d; color: #f8f8f2; padding: 15px 12px; border-radius: 8px; overflow-x: auto; max-width: 100%; font-family: -apple-system, BlinkMacSystemFont, \"SF Mono\", Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 13px; line-height: 1.6; margin: 16px 0; white-space: pre; word-break: normal; -webkit-overflow-scrolling: touch;"',
             html,
         )
 
@@ -161,3 +177,13 @@ class StyleManager:
         b = max(0, int(b * (100 - percent) / 100))
 
         return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _cleanup_empty_list_items(self, html: str) -> str:
+        """清理空列表项（修复 emoji 数字被误解析为有序列表的问题）"""
+        # 移除空的 li 标签（可能由 emoji 数字产生）
+        html = re.sub(r'<li>\s*</li>', '', html)
+
+        # 移除空的 ol 标签（如果里面没有内容）
+        html = re.sub(r'<ol>\s*</ol>', '', html)
+
+        return html

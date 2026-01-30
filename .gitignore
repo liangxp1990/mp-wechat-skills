@@ -13,6 +13,7 @@ __pycache__/
 .coverage
 htmlcov/
 *.cover
+node_modules/
 
 # 构建文件
 dist/
@@ -23,6 +24,8 @@ build/
 output/
 temp/
 *.log
+examples/
+temp_images/
 
 # IDE
 .vscode/
