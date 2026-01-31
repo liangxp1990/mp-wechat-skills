@@ -19,7 +19,28 @@
       "Bash(ls:*)",
       "Bash(curl:*)",
       "Bash(LOG_LEVEL=DEBUG python3:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(PYTHONPATH=scripts python3:*)",
+      "Bash(pip3:*)",
+      "Bash(source:*)",
+      "Bash(gh pr view:*)",
+      "Bash(__NEW_LINE_7ae52c52900ce593__ echo \"\")",
+      "Bash(for:*)",
+      "Bash(do:*)",
+      "Bash(if [ -f ~/.claude/skills/mp-weixin-skills/scripts/$module ])",
+      "Bash([:*)",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(__NEW_LINE_557ad78c19691d98__ echo \"\")",
+      "Read(//Users/liangxp-macmini/IdeaProjects/mp-wechat-skills/**)",
+      "Bash(grep:*)",
+      "Bash(ln:*)",
+      "Bash(PYTHONPATH=.python3 .claude/skills/mp-weixin-skills/scripts/cli.py publish:*)",
+      "Bash(PYTHONPATH=. python3:*)",
+      "Bash(pip:*)"
     ]
   }
 }
