@@ -40,3 +40,9 @@ temp_images/
 # Claude Code 本地设置
 .claude/settings.local.json
 .claude/settings.json
+
+# 虚拟环境
+venv/
+
+# 技能包文件
+*.skill

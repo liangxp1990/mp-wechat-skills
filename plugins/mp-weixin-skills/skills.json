@@ -1,0 +1,88 @@
+{
+  "name": "mp-weixin-skills",
+  "displayName": "微信公众号文章发布工具",
+  "description": "将 Markdown/Word/PDF 文档转换为微信公众号格式并发布到草稿箱",
+  "version": "0.1.0",
+  "author": "liangxp1990",
+  "license": "MIT",
+  "repository": "https://github.com/liangxp1990/mp-wechat-skills",
+  "homepage": "https://github.comliangxp1990/mp-wechat-skills",
+  "keywords": [
+    "wechat",
+    "weixin",
+    "mp",
+    "article",
+    "publish",
+    "markdown",
+    "converter",
+    "公众号",
+    "文章发布"
+  ],
+  "cli": "mp-weixin",
+  "install": "pip install mp-weixin-skills",
+  "dependencies": [
+    "markdown-it-py>=3.0.0",
+    "mdit-py-plugins>=0.4.0",
+    "python-docx>=1.0.0",
+    "PyMuPDF>=1.23.0",
+    "Pillow>=10.0.0",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "click>=8.1.0"
+  ],
+  "python": ">=3.10",
+  "env": {
+    "WECHAT_APP_ID": "微信 AppID",
+    "WECHAT_APP_SECRET": "微信 AppSecret"
+  },
+  "config": {
+    "OUTPUT_DIR": "./output",
+    "TEMPLATE_NAME": "default",
+    "THEME_COLOR": "#07c160",
+    "LOG_LEVEL": "INFO"
+  },
+  "examples": [
+    {
+      "title": "发布 Markdown 文章",
+      "command": "mp-weixin publish article.md",
+      "description": "将 Markdown 文件转换为微信公众号格式并发布到草稿箱"
+    },
+    {
+      "title": "仅转换格式",
+      "command": "mp-weixin publish article.md --no-api",
+      "description": "转换格式但不发布，生成 HTML 文件到 output 目录"
+    },
+    {
+      "title": "更新草稿",
+      "command": "mp-weixin update <media_id>",
+      "description": "更新已发布的草稿内容"
+    },
+    {
+      "title": "上传单张图片",
+      "command": "mp-weixin upload-image cover.jpg",
+      "description": "上传单张图片到微信素材库"
+    },
+    {
+      "title": "批量上传图片",
+      "command": "mp-weixin upload-images ./images",
+      "description": "批量上传文件夹中的所有图片到微信素材库"
+    }
+  ],
+  "features": [
+    "✅ Markdown 文档解析",
+    "✅ Word (.docx/.doc) 解析",
+    "✅ PDF (.pdf) 解析",
+    "✅ 一级标题渐变背景",
+    "✅ 自动封面生成（1080×460）",
+    "✅ 微信公众号 API 集成",
+    "✅ 草稿创建和更新",
+    "✅ 单张/批量图片上传",
+    "✅ 移动端友好代码块样式",
+    "✅ 手动模式和 API 模式"
+  ],
+  "supportedFormats": [
+    "Markdown (.md)",
+    "Word (.docx, .doc)",
+    "PDF (.pdf)"
+  ]
+}

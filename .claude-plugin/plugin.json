@@ -1,0 +1,11 @@
+{
+  "name": "mp-weixin-skills-marketplace",
+  "version": "1.0.0",
+  "description": "微信公众号文章管理技能市场。提供微信公众号文章发布、更新和素材管理功能。",
+  "keywords": ["wechat", "mp-weixin", "article", "publishing", "marketplace"],
+  "author": {
+    "name": "liangxp",
+    "url": "https://github.com/liangxp"
+  },
+  "license": "MIT"
+}
