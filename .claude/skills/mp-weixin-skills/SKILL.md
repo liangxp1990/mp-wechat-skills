@@ -1,341 +1,250 @@
 ---
 name: mp-weixin-skills
-description: 使用此 skill 将 Markdown/Word/PDF 文档转换为微信公众号格式并发布到草稿箱
+description: 微信公众号文章管理工具。用于管理微信公众号文章的发布和更新。使用场景：需要将文章发布到微信公众号草稿箱时；需要更新已有草稿内容时；需要上传图片素材到微信素材库时。核心功能：AI 直接生成带样式的 HTML 和封面，然后使用 Python 脚本调用微信 API 完成素材上传和草稿管理。
+license: MIT
 ---
 
-# 微信公众号文章发布工具
+# 微信公众号文章管理 Skill
 
-## Overview
+## 概述
 
-将 Markdown、Word 或 PDF 文档转换为符合微信公众号排版的 HTML 内容，自动生成封面、上传素材到微信素材库，并推送到草稿箱。
+这是一个专门用于管理微信公众号文章发布的 Skill。当您需要将文章发布到微信公众号时，此 Skill 会：
 
-**支持的文档格式:**
-- ✅ Markdown (.md)
-- ✅ Word (.docx, .doc)
-- ✅ PDF (.pdf)
+1. **AI 生成内容**：将文档转换为带内联样式的 HTML，并生成封面图
+2. **脚本上传**：使用 Python 脚本上传素材和创建草稿
 
-**Core principle:** 自动化处理内容发布流程，从文档转换到 API 上传一键完成。
+**核心原则：**
+- **AI 负责**：文档转换、样式应用、封面生成
+- **脚本负责**：微信 API 操作（上传素材、草稿管理）
 
-## When to Use
+## 快速开始
 
-- 需要定期发布文章到微信公众号
-- 有大量文档需要转换为微信格式
-- 希望自动化封面生成和素材上传流程
+### 使用前准备
 
-**使用前准备:**
-1. 配置微信公众号 API 凭证（AppID 和 AppSecret）
-2. 配置服务器 IP 白名单
-3. 确保有稳定的网络连接
+1. **配置微信公众号 API 凭证**
 
-## Instructions
-
-### 执行命令
-
-**发布文章到微信草稿箱:**
+在项目根目录创建 `.env` 文件：
 
 ```bash
-# 方案 1：项目根目录（相对路径）
-PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-weixin-skills/scripts/cli.py publish <file.md>
+# 微信公众号配置（必需）
+WECHAT_APP_ID=your_app_id_here
+WECHAT_APP_SECRET=your_app_secret_here
 
-# 方案 2：任何目录（绝对路径）
-PROJECT_PATH="/path/to/mp-weixin-skills"
-PYTHONPATH=$PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts python3 $PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts/cli.py --project-path $PROJECT_PATH publish <file.md>
+# 输出配置（可选）
+OUTPUT_DIR=./output
+TEMP_DIR=./temp
+
+# 样式配置（可选）
+THEME_COLOR=#07c160
 ```
 
-**更新已有草稿:**
+2. **安装依赖**
 
 ```bash
-# 方案 1：项目根目录
-PYTHONPATH=.claude/skills/mp-weixin-skills/scripts python3 .claude/skills/mp-weixin-skills/scripts/cli.py update <media_id>
-
-# 方案 2：任何目录
-PROJECT_PATH="/path/to/mp-weixin-skills"
-PYTHONPATH=$PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts python3 $PROJECT_PATH/.claude/skills/mp-weixin-skills/scripts/cli.py --project-path $PROJECT_PATH update <media_id>
+pip install -e .
 ```
 
-### 配置要求
+### 基本使用
 
-**必需配置:**
-- 在项目根目录创建 `.env` 文件
-- 添加微信公众号 API 凭证：
+**场景 1: AI 直接发布（推荐）**
+
+```
+请将这篇文章发布到微信公众号草稿箱
+```
+
+AI 会自动：
+1. 读取并分析文章内容
+2. 生成带内联样式的 HTML
+3. 生成封面图（1080×460）
+4. 调用上传接口发布到微信草稿箱
+
+**场景 2: 命令行发布（备选）**
 
 ```bash
-WECHAT_APP_ID=your_app_id
-WECHAT_APP_SECRET=your_app_secret
+# AI 生成内容后，使用命令行上传
+python3 scripts/publish.py "文章标题" article.html cover.jpg
 ```
 
-**获取 AppID 和 AppSecret:**
-1. 登录微信公众平台 https://mp.weixin.qq.com
-2. 进入「开发 → 基本配置」
-3. 查看「开发者ID (AppID)」和「开发者密码 (AppSecret)」
+## 工作流程
 
-**注意**: 如果未配置微信 API 凭证，工具会提示配置并引导完成设置。
+### AI 发布流程
 
-### 工作流程
+```mermaid
+graph LR
+    A[用户文章] --> B[AI 转换 HTML]
+    B --> C[AI 生成封面]
+    C --> D[publish.py 上传]
+    D --> E[微信草稿箱]
 
-1. **确认环境配置**: 确保项目根目录的 `.env` 文件包含微信 API 凭证
-2. **准备文档**: 确保 Markdown/Word/PDF 文档格式正确
-3. **执行发布**: 运行发布命令，工具自动上传封面和文章内容到草稿箱
-4. **检查结果**: 在微信公众号后台查看草稿箱
-
-## 最佳实践
-
-### 标题规范
-
-**标题长度:**
-- 建议：10-20 个字符
-- 上限：会自动截断为 18 个字符
-
-**标题格式:**
-```markdown
-# 主标题（使用一级标题）
-## 章节标题（使用二级标题）
+    style B fill:#e1f5ff
+    style C fill:#e1f5ff
+    style D fill:#fff4e1
 ```
 
-**一级标题样式（自动应用）:**
-- ✅ 主题色渐变背景（从主题色到淡化色）
-- ✅ 白色文字，增强对比度
-- ✅ 圆角边框（8px）
-- ✅ 阴影效果（文字和卡片阴影）
-- ✅ 内边距（20px 上下，24px 左右）
+### 详细步骤
 
-**二级标题样式（自动应用）:**
-- ✅ 左侧主题色装饰条（4px）
-- ✅ 12px 左内边距
+**第一步：AI 内容生成**
 
-**标题建议:**
-- ✅ 使用吸引人的标题，如 "3 个技巧让你..."
-- ✅ 加入数字增加吸引力
-- ✅ 突出核心价值点
-- ❌ 避免过于抽象的标题
+1. 读取文章内容（Markdown/文本）
+2. 按样式规范转换为 HTML
+3. 应用内联样式（标题、段落、代码块等）
+4. 生成符合微信阅读体验的完整 HTML
+5. 根据文章主题生成封面图（1080×460）
 
-**标题效果示例:**
-```
-┌─────────────────────────────────────┐
-│  标题文字（渐变背景，白色文字）       │
-└─────────────────────────────────────┘
+**第二步：微信 API 上传**
 
-章节标题
-│ 左侧装饰条 标题文字
-```
+1. 接收 AI 生成的 HTML 和封面路径
+2. 上传封面到微信素材库
+3. 调用微信公众号 API 创建草稿
+4. 返回草稿 media_id
 
-### 排版优化
+### 为什么这样设计？
 
-**段落间距:**
-- 每段之间空一行
-- 避免大段文字堆砌
+| 优势 | 说明 |
+|------|------|
+| **职责分离** | AI 擅长内容理解和样式应用，脚本专注 API 操作 |
+| **质量更高** | AI 能理解语义，生成更符合公众号风格的内容 |
+| **维护简单** | 脚本只做 API 调用，不需要维护复杂的文档解析逻辑 |
+| **灵活扩展** | 可以轻松更换 AI 提供商或生成方式 |
 
-**标题层级:**
-```markdown
-# 一级标题（文章标题）
-## 二级标题（章节）
-### 三级标题（小节）
-```
+## 样式规范
 
-**列表使用:**
-- 无序列表：使用 `-` 或 `*`
-- 有序列表：使用 `1.` `2.` `3.`
+### 自动应用的样式
 
-**代码块:**
-````markdown
-```python
-代码内容
-```
-````
+| 元素 | 样式特点 |
+|------|----------|
+| **一级标题** | 主题色渐变背景、白色文字、圆角阴影 |
+| **二级标题** | 左侧主题色装饰条（4px）、12px 左内边距 |
+| **段落** | 行高 1.75、字号 15px、两端对齐 |
+| **代码块** | 深色背景（#2d2d2d）、支持横向滚动、字号 13px |
+| **内联代码** | 浅灰背景（#f0f0f0）、粉色文字（#d63384） |
+| **引用块** | 左侧主题色边框、浅灰背景 |
+| **表格** | 表头主题色背景、白色文字、边框合并 |
 
-**引用块:**
-```markdown
-> 这是引用内容
-```
+### 主题色推荐
 
-**表格:**
-```markdown
-| 列1 | 列2 | 列3 |
-|-----|-----|-----|
-| 内容 | 内容 | 内容 |
-```
-
-### 文档格式支持
-
-**支持的格式:**
-
-| 格式 | 扩展名 | 状态 | 说明 |
-|------|--------|------|------|
-| Markdown | .md | ✅ 已实现 | 完整支持，推荐使用 |
-| Word | .docx, .doc | ✅ 已实现 | 支持标题、段落、列表提取 |
-| PDF | .pdf | ✅ 已实现 | 支持文本提取和多页文档 |
-
-**各格式特点:**
-
-**Markdown (.md)** - 推荐使用
-- ✅ 完整的格式支持（标题、列表、代码块、引用等）
-- ✅ 保留原始排版结构
-- ✅ 轻量级，易于版本控制
-
-**Word (.docx/.doc)**
-- ✅ 自动提取标题（文档属性或首段）
-- ✅ 识别标题层级（Heading 样式）
-- ✅ 保留段落和列表结构
-- ⚠️ 表格转换为简单文本
-- ⚠️ 图片暂不支持提取
-
-**PDF (.pdf)**
-- ✅ 支持多页文档
-- ✅ 自动提取元数据
-- ✅ 保留文本内容
-- ⚠️ 复杂排版可能简化
-- ⚠️ 图片暂不支持提取
-
-**使用建议:**
-- 优先使用 Markdown 格式，获得最佳转换效果
-- Word 文档建议使用样式（Heading 1, Heading 2）来标识标题层级
-- PDF 适用于已有文档的快速转换
-
-### 封面图生成
-
-**自动封面规格:**
-- 尺寸: 1080×460 (2.35:1)
-- 格式: JPEG
-- 质量: 95%
-- 字体: 华文黑体（支持中文）
-
-**封面设计元素:**
-- 渐变背景（基于主题色）
-- 右侧装饰条
-- 左上角几何图形
-- 底部装饰线和圆点
-- 文字阴影效果
-
-**自定义主题色:**
-```bash
-mp-weixin publish article.md --theme-color "#ff6b6b"
-```
-
-**推荐主题色:**
 | 色值 | 适用场景 |
 |------|----------|
-| `#07c160` | 科技、效率 |
+| `#07c160` | 科技、效率（默认） |
 | `#ff6b6b` | 生活、情感 |
 | `#4a90e2` | 商业、职场 |
 | `#f5a623` | 教育、培训 |
 | `#9013fe` | 创意、设计 |
 
-### 内容优化
+## 封面图生成
 
-**文章结构:**
-```
-标题
-├── 引言（1-2 段）
-├── 主体（3-5 个章节）
-│   ├── 小标题
-│   ├── 内容
-│   └── 示例/配图
-├── 总结（1 段）
-└── 行动号召（可选）
-```
+**自动封面规格：**
+- 尺寸：1080×460 (2.35:1)
+- 格式：JPEG
+- 质量：95%
+- 字体：华文黑体（支持中文）
 
-**写作建议:**
-1. **开篇吸引**: 前 3 秒决定读者是否继续阅读
-2. **结构清晰**: 使用小标题分隔内容
-3. **段落简短**: 每段 3-5 句话为宜
-4. **多用列表**: 提高可读性
-5. **加入配图**: 每 300-500 字配一张图
+**封面生成方式：**
 
-**代码示例:**
-```markdown
-## 标题
+| 方式 | 说明 | 适用场景 |
+|------|------|----------|
+| **搜索加工**（默认） | 从 Pexels 搜索高质量图片，添加渐变遮罩和标题文字 | 适用于所有文章 |
+| **AI 生成** | 使用 Claude/Midjourney/DALL·E 生成 | 重要文章、品牌建设 |
+| **模板生成** | 简单渐变背景 + 标题文字 | 快速生成 |
 
-引言内容...
+详细说明请查看 [封面生成参考](references/cover-guide.md)
 
-### 核心概念
+## 移动端友好设计
 
-- 要点一
-- 要点二
-- 要点三
+### 代码块（移动端优化）
 
-### 代码示例
+**关键特性：**
+- 深色背景（#2d2d2d）保护眼睛
+- 字号 13px 适合手机阅读
+- **横向滚动**（overflow-x: auto）
+- **不强制换行**（white-space: pre）
+- **iOS 平滑滚动**（-webkit-overflow-scrolling: touch）
 
-```python
-def example():
-    return "Hello"
-```
+**设计原则：**
+1. 不破坏代码结构
+2. 支持横向滚动查看长代码
+3. 触控滑动体验流畅
 
-## Command Reference
+### 图片优化
 
-### publish - 发布文章
+**移动端建议：**
+- 单张图片 ≤ 500KB
+- 宽度 ≤ 900px
+- 使用渐进式 JPEG
+- 考虑图片懒加载
 
-```bash
-mp-weixin publish <file> [options]
-```
+## CLI 命令
 
-**选项:**
-- `--template` - 样式模板 (default/modern/classic/tech/minimal)
-- `--theme-color` - 主题颜色 (如 #07c160)
-- `--no-api` - 不使用 API，仅生成 HTML 文件
-- `--verbose, -v` - 详细输出
-
-**示例:**
-```bash
-mp-weixin publish article.md
-mp-weixin publish article.md --template modern
-mp-weixin publish article.md --theme-color "#ff6b6b"
-mp-weixin publish article.md --no-api
-```
-
-### update - 更新草稿
+### 发布文章
 
 ```bash
-mp-weixin update <media_id> [options]
+# 使用 AI 生成的内容发布
+python3 scripts/publish.py "文章标题" article.html cover.jpg
 ```
 
-**选项:**
-- `--source` - 指定新的源文件
-- `--regenerate-cover` - 重新生成封面
-
-**示例:**
-```bash
-mp-weixin update <media_id>
-mp-weixin update <media_id> --regenerate-cover
-mp-weixin update <media_id> --source new-article.md
-```
-
-### version - 显示版本
+### 上传图片
 
 ```bash
-mp-weixin version
+# 上传单张图片（用于素材管理）
+python3 scripts/cli.py upload-image cover.jpg
+
+# 批量上传
+python3 scripts/cli.py upload-images ./images
 ```
 
-## Configuration
+## 常见问题
 
-### 环境变量 (.env)
+### Q: 如何获取 media_id？
 
-```bash
-# 微信公众号配置（必需）
-WECHAT_APP_ID=your_app_id
-WECHAT_APP_SECRET=your_app_secret
+A: 发布成功后会返回 media_id，也可以在微信公众号后台查看
 
-# 输出配置
-OUTPUT_DIR=./output
-TEMPLATE_NAME=default
-THEME_COLOR=#07c160
+### Q: 图片上传失败怎么办？
 
-# 日志配置
-LOG_LEVEL=INFO
-LOG_FILE=mp_weixin.log
+A: 检查图片大小（thumb ≤ 2MB，image ≤ 5MB），使用 TinyPNG 压缩后重试
+
+### Q: 代码块在手机上显示不全？
+
+A: 这是正常的，代码块支持横向滚动，不会强制换行破坏代码结构
+
+### Q: 如何只生成 HTML 不上传？
+
+A: AI 可以直接输出 HTML 内容，保存为文件即可
+
+## 项目结构
+
+```
+mp-weixin-skills/
+├── SKILL.md              # 主文件
+├── skills.json           # Skill 元数据
+├── .env.example          # 环境配置示例
+│
+├── scripts/              # 可执行脚本
+│   ├── publish.py        # 简化的发布接口（AI 调用）⭐
+│   ├── cli.py           # 完整的命令行接口（可选）
+│   ├── config.py        # 配置管理
+│   ├── exceptions.py    # 自定义异常
+│   │
+│   ├── wechat/          # 微信 API 操作（核心）⭐
+│   │   ├── __init__.py
+│   │   └── api_client.py
+│   │
+│   └── utils/           # 工具函数
+│       ├── __init__.py
+│       └── logger.py
+│
+├── references/           # 详细文档（按需加载）📚
+│   ├── cover-guide.md         # 封面指南
+│   └── ...                   # 其他参考文档
+│
+├── output/              # 输出目录（生成）
+└── temp/                # 临时文件（生成）
 ```
 
-### IP 白名单配置
+**核心功能说明：**
+- ⭐ **wechat/** - 微信公众号 API 操作（上传素材、创建/更新草稿）
+- ⭐ **publish.py** - 简化的发布接口，接收 AI 生成的 HTML 和封面
+- 📚 **references/** - Progressive Disclosure 文档，按需加载
 
-1. 登录微信公众平台
-2. 进入「开发 → 基本配置」
-3. 找到「IP 白名单」
-4. 添加服务器公网 IP
-5. 等待 5-15 分钟生效
+## 许可证
 
-## Error Handling
-
-| 错误码 | 说明 | 解决方案 |
-|--------|------|----------|
-| 40001 | AppSecret 错误 | 检查 AppSecret 是否正确 |
-| 40164 | IP 不在白名单 | 配置 IP 白名单，等待生效 |
-| 45009 | 接口调用超过限制 | 等待限制重置 |
+MIT License

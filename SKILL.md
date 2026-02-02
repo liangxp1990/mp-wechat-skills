@@ -257,9 +257,9 @@ python3 scripts/cli.py upload-images ./covers --type thumb
 
 | 方式 | 说明 | 适用场景 |
 |------|------|----------|
-| **模板生成** | 自动使用文章标题生成，渐变背景 | 快速发布、日常更新 |
+| **搜索加工**（默认） | 从 Unsplash/Pexels 搜索高质量图片，添加渐变遮罩和标题文字 | 适用于所有文章 |
 | **AI 生成** | 使用 Claude/Midjourney/DALL·E 生成 | 重要文章、品牌建设 |
-| **搜索加工** | 从 Unsplash/Pexels 搜索并二次加工 | 多数文章、风格多样 |
+| **模板生成** | 自动使用文章标题生成，渐变背景 | 网络不可用时的备选 |
 
 详细说明请查看 [封面生成参考](references/cover-guide.md)
 

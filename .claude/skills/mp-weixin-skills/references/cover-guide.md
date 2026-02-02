@@ -48,32 +48,37 @@
    - 识别文章属于技术/职场/生活哪一类
    - 选择对应的英文搜索关键词
 
-2. **使用 Chrome DevTools MCP 搜索图片**
+2. **使用浏览器 MCP 搜索图片**
+
+   使用任何可用的浏览器 MCP（如 Chrome DevTools MCP、dev-browser、agent-browser）执行以下操作：
+
+   **导航到 Pexels 搜索页面：**
    ```python
-   # 导航到 Pexels 搜索页面
-   mcp__Chrome_DevTools_MCP__navigate_page(
-       type="url",
-       url="https://www.pexels.com/zh-cn/search/[关键词]/"
-   )
+   # 使用浏览器 MCP 的导航功能
+   navigate_page("https://www.pexels.com/zh-cn/search/[关键词]/")
    ```
 
 3. **提取图片链接**
+
+   使用浏览器 MCP 的脚本执行功能提取页面中的图片 URL：
+
    ```python
-   mcp__Chrome_DevTools_MCP__evaluate_script(
-       function="""
+   # 使用浏览器 MCP 的脚本执行功能
+   results = evaluate_script("""
        () => {
            const imgs = document.querySelectorAll('img');
-           const results = [];
+           const imageUrls = [];
            imgs.forEach(img => {
                const src = img.src || img.getAttribute('data-src');
                if (src && src.includes('pexels')) {
-                   results.push(src);
+                   imageUrls.push(src);
                }
            });
-           return results;
+           return imageUrls;
        }
-       """
-   )
+   """)
+   # 选择第一张图片
+   image_url = results[0]
    ```
 
 4. **下载图片到本地**

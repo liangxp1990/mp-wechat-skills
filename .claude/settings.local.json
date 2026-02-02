@@ -40,7 +40,13 @@
       "Bash(ln:*)",
       "Bash(PYTHONPATH=.python3 .claude/skills/mp-weixin-skills/scripts/cli.py publish:*)",
       "Bash(PYTHONPATH=. python3:*)",
-      "Bash(pip:*)"
+      "Bash(pip:*)",
+      "Bash(xxd:*)",
+      "mcp__web-search-prime__webSearchPrime",
+      "mcp__Chrome_DevTools_MCP__navigate_page",
+      "mcp__Chrome_DevTools_MCP__take_screenshot",
+      "mcp__Chrome_DevTools_MCP__evaluate_script",
+      "mcp__Chrome_DevTools_MCP__new_page"
     ]
   }
 }

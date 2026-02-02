@@ -10,6 +10,8 @@ from utils.logger import setup_logging
 from parsers import ParserFactory
 from converters import WechatHTMLBuilder
 from covers.template_maker import TemplateCoverGenerator
+from covers.image_search_maker import ImageSearchCoverGenerator
+from covers.browser_search_maker import BrowserSearchCoverGenerator
 from wechat import WechatApiClient, WechatConfig
 from exceptions import MpWeixinError
 
@@ -17,40 +19,35 @@ logger = logging.getLogger(__name__)
 
 
 @click.group()
-@click.option("--verbose", "-v", is_flag=True, help="详细输出")
-@click.option("--env", default=".env", help="环境文件路径（相对于 project-path 或绝对路径）")
-@click.option("--project-path", help="项目根目录路径（用于解析相对路径）")
+@click.option("--verbose", "-v", is_flag=True, help="Verbose output")
+@click.option("--env", default=".env", help="Environment file path")
 @click.pass_context
-def main(ctx: click.Context, verbose: bool, env: str, project_path: str):
+def main(ctx: click.Context, verbose: bool, env: str):
     """微信公众号文章发布工具
 
     一个强大的工具，将 Markdown 文档转换为符合微信公众号排版要求的格式。
     """
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
-    ctx.obj["project_path"] = project_path
-
-    # 解析 env 文件路径
-    env_path = Path(env)
-    if not env_path.is_absolute() and project_path:
-        # 如果 env 是相对路径且有 project_path，则拼接
-        env_path = Path(project_path) / env
-    ctx.obj["env"] = str(env_path)
+    ctx.obj["env"] = env
 
 
 @main.command()
 @click.argument("file", type=click.Path(exists=True))
-@click.option("--template", default="default", help="样式模板名称")
-@click.option("--cover-type", default="template", help="封面生成方式 (template)")
+@click.option("--no-api", is_flag=True, help="不使用 API，仅生成 HTML 文件")
+@click.option("--template", default="default", help="Style template name")
+@click.option("--cover-type", default="browser", type=click.Choice(["browser", "search", "template"], case_sensitive=False), help="Cover generation type: browser (Pexels), search (Unsplash), template")
 @click.pass_context
-def publish(ctx: click.Context, file: str, template: str, cover_type: str):
+def publish(ctx: click.Context, file: str, no_api: bool, template: str, cover_type: str):
     """发布文章到微信公众号
 
-    将 Markdown 文件转换为微信公众号格式，并自动上传到草稿箱。
+    将 Markdown 文件转换为微信公众号格式，并可选上传到草稿箱。
 
     示例:
 
-        mp-weixin publish article.md                    # 使用 API 上传到草稿箱
+        mp-weixin publish article.md                    # 使用 API 上传
+
+        mp-weixin publish article.md --no-api          # 仅生成 HTML 文件
 
         mp-weixin publish article.md --template fancy  # 使用指定模板
     """
@@ -61,19 +58,6 @@ def publish(ctx: click.Context, file: str, template: str, cover_type: str):
         setup_logging(log_level, config.log_file)
 
         logger.info("[CLI] 微信公众号文章发布工具启动")
-
-        # 检查微信 API 配置
-        if not config.has_wechat_api():
-            click.echo("❌ 未配置微信公众号 API 凭证")
-            click.echo("\n请在项目根目录的 .env 文件中添加以下配置：")
-            click.echo("\n  WECHAT_APP_ID=your_app_id")
-            click.echo("  WECHAT_APP_SECRET=your_app_secret")
-            click.echo("\n获取方式：")
-            click.echo("  1. 登录微信公众平台 https://mp.weixin.qq.com")
-            click.echo("  2. 进入「开发 → 基本配置」")
-            click.echo("  3. 查看「开发者ID (AppID)」和「开发者密码 (AppSecret)」")
-            click.echo("\n配置完成后，请重新运行命令。")
-            sys.exit(1)
 
         # 解析文档
         file_path = Path(file)
@@ -87,33 +71,86 @@ def publish(ctx: click.Context, file: str, template: str, cover_type: str):
         html_content = builder.build(parsed)
 
         # 生成封面
-        cover_gen = TemplateCoverGenerator(config.theme_color)
+        if cover_type == "template":
+            cover_gen = TemplateCoverGenerator(config.theme_color)
+        elif cover_type == "browser":
+            # 浏览器搜索（默认，使用 Pexels）
+            cover_gen = BrowserSearchCoverGenerator(config.theme_color)
+        else:  # search (Unsplash)
+            from covers.image_search_maker import ImageSearchCoverGenerator
+            cover_gen = ImageSearchCoverGenerator(config.theme_color)
+
         cover_result = cover_gen.generate(parsed.title, "")
 
-        # API 模式
-        logger.info("[CLI] 运行在 API 模式")
+        if no_api or not config.has_wechat_api():
+            # 手动模式
+            logger.info("[CLI] 运行在手动模式")
 
-        api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
-        api_client = WechatApiClient(api_config)
+            output_dir = config.output_dir
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 上传封面
-        cover_data = api_client.upload_media(str(cover_result.image_path), "thumb")
+            # 保存 HTML
+            html_file = output_dir / f"{file_path.stem}.html"
+            html_file.write_text(html_content, encoding="utf-8")
 
-        # 构建文章数据
-        article = {
-            "title": parsed.title,
-            "content": html_content,
-            "thumb_media_id": cover_data["media_id"],
-            "need_open_comment": 0,
-            "only_fans_can_comment": 0,
-        }
+            click.echo(f"✅ 转换完成!")
+            click.echo(f"   HTML: {html_file}")
+            click.echo(f"   封面: {cover_result.image_path}")
+            click.echo(f"\n📝 请手动上传到微信公众号后台")
 
-        # 上传草稿
-        result = api_client.upload_draft([article])
+        else:
+            # API 模式
+            logger.info("[CLI] 运行在 API 模式")
 
-        click.echo(f"✅ 文章发布成功!")
-        click.echo(f"   Media ID: {result['media_id']}")
-        click.echo(f"   📝 请在微信公众号后台查看草稿")
+            api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
+            api_client = WechatApiClient(api_config)
+
+            # 处理文章中的图片：提取、上传到微信素材库、替换链接
+            from utils.image_extractor import ImageExtractor
+            from utils.image_processor import ImageProcessor
+
+            logger.info("[CLI] 开始处理文章中的图片")
+
+            # 提取并处理图片
+            extractor = ImageExtractor(config.temp_dir)
+            image_processor = ImageProcessor(api_client, config.temp_dir)
+
+            # 从原始 Markdown 中提取图片信息（如果有）
+            markdown_content = file_path.read_text(encoding='utf-8')
+            images, local_images = extractor.extract_and_prepare_images(
+                markdown_content, 'markdown', file_path.parent
+            )
+
+            if images:
+                logger.info(f"[CLI] 发现 {len(images)} 张图片，正在上传到微信素材库")
+
+                # 处理图片并替换 HTML 中的链接
+                html_content = image_processor.process_images(html_content, images, "image")
+
+                # 显示上传结果
+                success_count = sum(1 for img in images if 'wechat_url' in img or img.get('uploaded'))
+                click.echo(f"   图片上传: {success_count}/{len(images)} 张成功")
+            else:
+                logger.info("[CLI] 文章中没有发现图片")
+
+            # 上传封面
+            cover_data = api_client.upload_media(str(cover_result.image_path), "thumb")
+
+            # 构建文章数据
+            article = {
+                "title": parsed.title,
+                "content": html_content,
+                "thumb_media_id": cover_data["media_id"],
+                "need_open_comment": 0,
+                "only_fans_can_comment": 0,
+            }
+
+            # 上传草稿
+            result = api_client.upload_draft([article])
+
+            click.echo(f"✅ 文章发布成功!")
+            click.echo(f"   Media ID: {result['media_id']}")
+            click.echo(f"   📝 请在微信公众号后台查看草稿")
 
     except MpWeixinError as e:
         click.echo(e.user_message())
@@ -171,8 +208,8 @@ def update(ctx: click.Context, media_id: str, source: str, regenerate_cover: boo
 
         # 生成封面（如果需要）
         if regenerate_cover:
-            logger.info("[CLI] 重新生成封面")
-            cover_gen = TemplateCoverGenerator(config.theme_color)
+            logger.info("[CLI] 重新生成封面（使用图片搜索）")
+            cover_gen = ImageSearchCoverGenerator(config.theme_color)
             cover_result = cover_gen.generate(parsed.title, "")
 
             # 上传新封面
@@ -228,13 +265,147 @@ def update(ctx: click.Context, media_id: str, source: str, regenerate_cover: boo
 
 
 @main.command()
+@click.argument("file", type=click.Path(exists=True))
+@click.option("--type", "media_type", default="image", type=click.Choice(["thumb", "image"], case_sensitive=False), help="素材类型")
+@click.option("--env", default=".env", help="环境文件路径")
+@click.pass_context
+def upload_image(ctx: click.Context, file: str, media_type: str, env: str):
+    """上传单张图片到微信素材库
+
+    示例:
+
+        mp-weixin upload-image cover.jpg                 # 上传为图片
+
+        mp-weixin upload-image cover.jpg --type thumb    # 上传为缩略图
+    """
+    try:
+        # 加载配置
+        config = AppConfig.from_env(env or ctx.obj.get("env", ".env"))
+        setup_logging(config.log_level, config.log_file)
+
+        logger.info("[CLI] 微信公众号图片上传工具启动")
+        logger.info(f"[CLI] 文件: {file}")
+        logger.info(f"[CLI] 类型: {media_type}")
+
+        # 验证 API 配置
+        if not config.has_wechat_api():
+            click.echo("❌ 未配置微信 API 凭证，请在 .env 文件中设置 WECHAT_APP_ID 和 WECHAT_APP_SECRET")
+            sys.exit(1)
+
+        # 初始化 API 客户端
+        api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
+        api_client = WechatApiClient(api_config)
+
+        # 上传图片
+        result = api_client.upload_media(file, media_type)
+
+        click.echo(f"✅ 图片上传成功!")
+        click.echo(f"   Media ID: {result['media_id']}")
+        click.echo(f"   URL: {result.get('url', '暂无')}")
+        click.echo(f"   类型: {media_type}")
+
+    except MpWeixinError as e:
+        click.echo(e.user_message())
+        sys.exit(1)
+    except Exception as e:
+        logger.exception(f"[CLI] 未处理的异常")
+        click.echo(f"❌ 发生错误: {e}")
+        sys.exit(1)
+
+
+@main.command()
+@click.argument("directory", type=click.Path(exists=True, file_okay=False))
+@click.option("--type", "media_type", default="image", type=click.Choice(["thumb", "image"], case_sensitive=False), help="素材类型")
+@click.option("--pattern", default="*.jpg", help="文件匹配模式")
+@click.option("--env", default=".env", help="环境文件路径")
+@click.pass_context
+def upload_images(ctx: click.Context, directory: str, media_type: str, pattern: str, env: str):
+    """批量上传文件夹中的图片到微信素材库
+
+    示例:
+
+        mp-weixin upload-images ./images                    # 上传 images 文件夹中的所有 JPG 图片
+
+        mp-weixin upload-images ./photos --pattern "*.png" # 上传所有 PNG 图片
+
+        mp-weixin upload-images ./covers --type thumb      # 上传为缩略图
+    """
+    try:
+        # 加载配置
+        config = AppConfig.from_env(env or ctx.obj.get("env", ".env"))
+        setup_logging(config.log_level, config.log_file)
+
+        logger.info("[CLI] 微信公众号批量图片上传工具启动")
+        logger.info(f"[CLI] 目录: {directory}")
+        logger.info(f"[CLI] 模式: {pattern}")
+        logger.info(f"[CLI] 类型: {media_type}")
+
+        # 验证 API 配置
+        if not config.has_wechat_api():
+            click.echo("❌ 未配置微信 API 凭证，请在 .env 文件中设置 WECHAT_APP_ID 和 WECHAT_APP_SECRET")
+            sys.exit(1)
+
+        # 初始化 API 客户端
+        api_config = WechatConfig(config.wechat_app_id, config.wechat_app_secret)
+        api_client = WechatApiClient(api_config)
+
+        # 查找图片文件
+        dir_path = Path(directory)
+        image_files = list(dir_path.glob(pattern))
+
+        if not image_files:
+            click.echo(f"⚠️  未找到匹配的图片文件: {pattern}")
+            sys.exit(0)
+
+        click.echo(f"📁 找到 {len(image_files)} 个图片文件\n")
+
+        # 批量上传
+        results = []
+        success_count = 0
+        fail_count = 0
+
+        for i, image_file in enumerate(image_files, 1):
+            click.echo(f"[{i}/{len(image_files)}] 上传: {image_file.name}...", nl=False)
+            try:
+                result = api_client.upload_media(str(image_file), media_type)
+                results.append({"file": image_file.name, "media_id": result["media_id"], "status": "success"})
+                success_count += 1
+                click.echo(" ✅")
+            except Exception as e:
+                results.append({"file": image_file.name, "error": str(e), "status": "failed"})
+                fail_count += 1
+                click.echo(f" ❌ ({e})")
+
+        # 显示汇总
+        click.echo(f"\n{'='*60}")
+        click.echo(f"✅ 上传完成!")
+        click.echo(f"   成功: {success_count}")
+        click.echo(f"   失败: {fail_count}")
+        click.echo(f"{'='*60}\n")
+
+        # 显示成功的上传结果
+        if success_count > 0:
+            click.echo("📋 成功上传的图片:")
+            click.echo(f"{'文件名':<30} {'Media ID':<30}")
+            click.echo("-" * 60)
+            for r in results:
+                if r["status"] == "success":
+                    click.echo(f"{r['file']:<30} {r['media_id']:<30}")
+
+    except MpWeixinError as e:
+        click.echo(e.user_message())
+        sys.exit(1)
+    except Exception as e:
+        logger.exception(f"[CLI] 未处理的异常")
+        click.echo(f"❌ 发生错误: {e}")
+        sys.exit(1)
+
+
+@main.command()
 def version():
     """显示版本信息"""
-    try:
-        from config import __version__
-        click.echo(f"mp-weixin-skills version {__version__}")
-    except ImportError:
-        click.echo("mp-weixin-skills version 0.1.0")
+    from src import __version__
+    click.echo(f"mp-weixin-skills version {__version__}")
 
 
 if __name__ == "__main__":

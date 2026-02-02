@@ -4,18 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mp-weixin-skills"
-version = "0.1.0"
-description = "微信公众号文章发布工具"
+version = "0.2.0"
+description = "微信公众号文章发布工具 - AI 直接生成内容并发布"
 readme = "SKILL.md"
 requires-python = ">=3.10"
 authors = [
     {name = "Claude AI"}
 ]
 dependencies = [
-    "markdown-it-py>=3.0.0",
-    "mdit-py-plugins>=0.4.0",
-    "python-docx>=1.0.0",
-    "PyMuPDF>=1.23.0",
     "Pillow>=10.0.0",
     "requests>=2.31.0",
     "python-dotenv>=1.0.0",
