@@ -29,7 +29,7 @@
 
 ```bash
 # 1. 添加技能市场
-claude plugin marketplace add liangxp/mp-wechat-skills
+claude plugin marketplace add liangxp1990/mp-wechat-skills
 
 # 2. 安装技能
 claude plugin install mp-weixin-skills@mp-weixin-skills

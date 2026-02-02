@@ -1,5 +1,9 @@
 {
-  "marketplace": "mp-weixin-skills",
+  "name": "mp-weixin-skills",
+  "owner": {
+    "name": "liangxp1990",
+    "url": "https://github.com/liangxp1990"
+  },
   "version": "1.0.0",
   "plugins": [
     {
@@ -9,8 +13,8 @@
       "source": "./plugins/mp-weixin-skills",
       "category": "productivity",
       "author": {
-        "name": "liangxp",
-        "url": "https://github.com/liangxp"
+        "name": "liangxp1990",
+        "url": "https://github.com/liangxp1990"
       },
       "keywords": ["wechat", "mp-weixin", "article", "publishing"],
       "strict": false
