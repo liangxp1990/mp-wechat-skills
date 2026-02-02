@@ -4,19 +4,19 @@
     "name": "liangxp1990",
     "url": "https://github.com/liangxp1990"
   },
-  "version": "1.0.0",
+  "version": "0.2.0",
   "plugins": [
     {
       "name": "mp-weixin-skills",
-      "description": "微信公众号文章管理工具。用于管理微信公众号文章的发布和更新。",
-      "version": "1.0.0",
-      "source": "./plugins/mp-weixin-skills",
+      "description": "微信公众号文章管理工具 - AI 直接生成带样式的 HTML 和封面，然后调用微信 API 发布到草稿箱。",
+      "version": "0.2.0",
+      "source": "./.claude/skills/mp-weixin-skills",
       "category": "productivity",
       "author": {
         "name": "liangxp1990",
         "url": "https://github.com/liangxp1990"
       },
-      "keywords": ["wechat", "mp-weixin", "article", "publishing"],
+      "keywords": ["wechat", "mp-weixin", "article", "publishing", "ai"],
       "strict": false
     }
   ]

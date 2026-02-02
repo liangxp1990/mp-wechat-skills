@@ -1,30 +1,26 @@
 {
   "name": "mp-weixin-skills",
   "displayName": "微信公众号文章发布工具",
-  "description": "将 Markdown/Word/PDF 文档转换为微信公众号格式并发布到草稿箱",
-  "version": "0.1.0",
+  "description": "AI 直接生成带样式的 HTML 和封面，然后调用微信 API 发布到草稿箱",
+  "version": "0.2.0",
   "author": "liangxp1990",
   "license": "MIT",
   "repository": "https://github.com/liangxp1990/mp-wechat-skills",
-  "homepage": "https://github.comliangxp1990/mp-wechat-skills",
+  "homepage": "https://github.com/liangxp1990/mp-wechat-skills",
   "keywords": [
     "wechat",
     "weixin",
     "mp",
     "article",
     "publish",
-    "markdown",
-    "converter",
+    "ai",
     "公众号",
-    "文章发布"
+    "文章发布",
+    "automation"
   ],
   "cli": "mp-weixin",
   "install": "pip install mp-weixin-skills",
   "dependencies": [
-    "markdown-it-py>=3.0.0",
-    "mdit-py-plugins>=0.4.0",
-    "python-docx>=1.0.0",
-    "PyMuPDF>=1.23.0",
     "Pillow>=10.0.0",
     "requests>=2.31.0",
     "python-dotenv>=1.0.0",
@@ -37,40 +33,44 @@
   },
   "config": {
     "OUTPUT_DIR": "./output",
-    "TEMPLATE_NAME": "default",
     "THEME_COLOR": "#07c160",
     "LOG_LEVEL": "INFO"
   },
   "examples": [
     {
-      "title": "发布 Markdown 文章",
-      "command": "mp-weixin publish article.md",
-      "description": "将 Markdown 文件转换为微信公众号格式并发布到草稿箱"
+      "title": "发布文章（AI 驱动）",
+      "prompt": "请将这篇文章发布到微信公众号草稿箱",
+      "description": "AI 自动生成 HTML 和封面，然后发布到微信草稿箱"
     },
     {
-      "title": "仅转换格式",
-      "command": "mp-weixin publish article.md --no-api",
-      "description": "转换格式但不发布，生成 HTML 文件到 output 目录"
+      "title": "上传图片素材",
+      "command": "mp-weixin upload-image cover.jpg",
+      "description": "上传单张图片到微信素材库"
     },
     {
-      "title": "更新草稿",
-      "command": "mp-weixin update <media_id>",
-      "description": "更新已发布的草稿内容"
+      "title": "批量上传图片",
+      "command": "mp-weixin upload-images ./images",
+      "description": "批量上传文件夹中的图片到微信素材库"
     }
   ],
   "features": [
-    "✅ Markdown 文档解析",
-    "✅ Word (.docx/.doc) 解析",
-    "✅ PDF (.pdf) 解析",
-    "✅ 一级标题渐变背景",
-    "✅ 自动封面生成（1080×460）",
+    "✅ AI 直接生成带样式的 HTML",
+    "✅ AI 自动生成封面图（1080×460）",
+    "✅ 支持浏览器 MCP 搜索图片",
     "✅ 微信公众号 API 集成",
-    "✅ 草稿创建和更新",
-    "✅ 手动模式和 API 模式"
+    "✅ 草稿创建和管理",
+    "✅ 图片素材管理"
   ],
-  "supportedFormats": [
-    "Markdown (.md)",
-    "Word (.docx, .doc)",
-    "PDF (.pdf)"
-  ]
+  "architecture": {
+    "aiResponsibilities": [
+      "文档转换（Markdown → HTML）",
+      "样式应用（内联样式）",
+      "封面生成（搜索图片 + PIL 加工）"
+    ],
+    "scriptResponsibilities": [
+      "微信 API 操作",
+      "素材上传",
+      "草稿管理"
+    ]
+  }
 }
